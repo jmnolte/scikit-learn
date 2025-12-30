@@ -78,6 +78,38 @@ doc_HalfPoissonLoss = (
     """
 )
 
+doc_HalfNegativeBinomialLoss = (
+    """Half Negative Binomial deviance loss with log-link.
+
+    Domain:
+    y_true in non-negative real numbers
+    y_pred in positive real numbers
+    alpha > 0 (dispersion parameter)
+
+    Link:
+    y_pred = exp(raw_prediction)
+
+    The Negative Binomial distribution generalizes the Poisson by allowing
+    overdispersion with variance = y_pred + alpha * y_pred^2.
+    As alpha approaches 0, this converges to the Poisson distribution. For alpha < 1e-6,
+    the Poisson Loss is used instead.
+
+    Half Negative Binomial deviance with log-link is:
+        2 * [y_true * log(y_true/y_pred) 
+             - (y_true + 1/alpha) * log((y_true + 1/alpha)/(y_pred + 1/alpha))]
+        = 2 * [y_true * log(y_true) - y_true * raw_prediction
+               - (y_true + 1/alpha) * log(y_true + 1/alpha)
+               + (y_true + 1/alpha) * log(y_pred + 1/alpha)]
+
+    Dropping constant terms (not dependent on raw_prediction), this gives:
+        -y_true * raw_prediction + y_pred + (y_true + 1/alpha) * log(y_pred + 1/alpha)
+        = exp(raw_prediction) - y_true * raw_prediction 
+          + (y_true + 1/alpha) * log(exp(raw_prediction) + 1/alpha)
+        = exp(raw_prediction) - y_true * raw_prediction 
+          + (y_true + 1/alpha) * log(1 + alpha * exp(raw_prediction))
+    """
+)
+
 doc_HalfGammaLoss = (
     """Half Gamma deviance loss with log-link.
 
@@ -194,6 +226,9 @@ class_list = [
     ("CyHalfPoissonLoss", doc_HalfPoissonLoss, None,
      "closs_half_poisson", "closs_grad_half_poisson",
      "cgradient_half_poisson", "cgrad_hess_half_poisson"),
+    ("CyHalfNegativeBinomialLoss", doc_HalfNegativeBinomialLoss, None,
+     "closs_half_negbinom", "closs_grad_half_negbinom",
+     "cgradient_half_negbinom", "cgrad_hess_half_negbinom"),
     ("CyHalfGammaLoss", doc_HalfGammaLoss, None,
      "closs_half_gamma", "closs_grad_half_gamma",
      "cgradient_half_gamma", "cgrad_hess_half_gamma"),
@@ -464,6 +499,80 @@ cdef inline double_pair cgrad_hess_half_poisson(
     cdef double_pair gh
     gh.val2 = exp(raw_prediction)  # hessian
     gh.val1 = gh.val2 - y_true     # gradient
+    return gh
+
+
+# Half Negative Binomial Deviance with Log-Link, dropping constant terms
+# alpha is the dispersion parameter (alpha -> 0 gives Poisson, alpha > 0 gives overdispersion)
+
+cdef inline double closs_half_negbinom(
+    double y_true,
+    double raw_prediction,
+    double alpha
+) noexcept nogil:
+    cdef double mu = exp(raw_prediction)
+    if alpha < 1e-6:
+        return closs_half_poisson(y_true, raw_prediction)
+    return mu - y_true * raw_prediction + (y_true + 1.0/alpha) * log(1.0 + alpha * mu)
+
+
+cdef inline double cgradient_half_negbinom(
+    double y_true,
+    double raw_prediction,
+    double alpha
+) noexcept nogil:
+    cdef double mu = exp(raw_prediction)
+    if alpha < 1e-6:
+        return cgradient_half_poisson(y_true, raw_prediction)
+    return mu - y_true - (y_true + 1.0/alpha) * mu / (1.0/alpha + mu)
+
+
+cdef inline double_pair closs_grad_half_negbinom(
+    double y_true,
+    double raw_prediction,
+    double alpha
+) noexcept nogil:
+    cdef double_pair lg
+    cdef double mu, denom, factor
+
+    if alpha < 1e-6:
+        return closs_grad_half_poisson(y_true, raw_prediction)
+    
+    mu = exp(raw_prediction)
+    denom = 1.0/alpha + mu
+    factor = y_true + 1.0/alpha
+    
+    # Loss
+    lg.val1 = mu - y_true * raw_prediction + factor * log(1.0 + alpha * mu)
+    
+    # Gradient: d/d(raw_prediction) of log-likelihood
+    lg.val2 = mu - y_true - factor * mu / denom
+    
+    return lg
+
+
+cdef inline double_pair cgrad_hess_half_negbinom(
+    double y_true,
+    double raw_prediction,
+    double alpha
+) noexcept nogil:
+    cdef double_pair gh
+    cdef double mu, denom, factor, ratio
+
+    if alpha < 1e-6:
+        return cgrad_hess_half_poisson(y_true, raw_prediction)
+    
+    mu = exp(raw_prediction)
+    denom = 1.0/alpha + mu
+    factor = y_true + 1.0/alpha
+    ratio = mu / denom
+    
+    # Gradient: d/d(raw_prediction) of log-likelihood
+    gh.val1 = mu - y_true - factor * ratio
+    
+    # Hessian: d/d(raw_prediction) of gradient
+    gh.val2 = mu - factor * mu / (alpha * denom * denom)
+    
     return gh
 
 

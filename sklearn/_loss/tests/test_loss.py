@@ -21,6 +21,7 @@ from sklearn._loss.loss import (
     HalfGammaLoss,
     HalfMultinomialLoss,
     HalfPoissonLoss,
+    HalfNegativeBinomialLoss,
     HalfSquaredError,
     HalfTweedieLoss,
     HalfTweedieLossIdentity,
@@ -37,6 +38,9 @@ LOSS_INSTANCES = [loss() for loss in ALL_LOSSES]
 LOSS_INSTANCES += [
     PinballLoss(quantile=0.25),
     HuberLoss(quantile=0.75),
+    HalfNegativeBinomialLoss(alpha=0.5),
+    HalfNegativeBinomialLoss(alpha=1.0),
+    HalfNegativeBinomialLoss(alpha=2.0),
     HalfTweedieLoss(power=-1.5),
     HalfTweedieLoss(power=0),
     HalfTweedieLoss(power=1),
@@ -59,6 +63,8 @@ def loss_instance_name(param):
             name += f"(quantile={loss.quantile}"
         elif hasattr(loss, "closs") and hasattr(loss.closs, "power"):
             name += f"(power={loss.closs.power})"
+        elif hasattr(loss, "closs") and hasattr(loss.closs, "alpha"):
+            name += f"(alpha={loss.closs.alpha})"
         return name
     else:
         return str(param)
@@ -159,6 +165,9 @@ Y_COMMON_PARAMS = [
     (PinballLoss(), [-100, 0, 0.1, 100], [-np.inf, np.inf]),
     (HuberLoss(), [-100, 0, 0.1, 100], [-np.inf, np.inf]),
     (HalfPoissonLoss(), [0.1, 100], [-np.inf, -3, -0.1, np.inf]),
+    (HalfNegativeBinomialLoss(alpha=0.5), [0.1, 100], [-np.inf, -3, -0.1, np.inf]),
+    (HalfNegativeBinomialLoss(alpha=1.0), [0.1, 100], [-np.inf, -3, -0.1, np.inf]),
+    (HalfNegativeBinomialLoss(alpha=2.0), [0.1, 100], [-np.inf, -3, -0.1, np.inf]),
     (HalfGammaLoss(), [0.1, 100], [-np.inf, -3, -0.1, 0, np.inf]),
     (HalfTweedieLoss(power=-3), [0.1, 100], [-np.inf, np.inf]),
     (HalfTweedieLoss(power=0), [0.1, 100], [-np.inf, np.inf]),
@@ -178,6 +187,9 @@ Y_COMMON_PARAMS = [
 Y_TRUE_PARAMS = [  # type: ignore[var-annotated]
     # (loss, [y success], [y fail])
     (HalfPoissonLoss(), [0], []),
+    (HalfNegativeBinomialLoss(alpha=0.5), [0], []),
+    (HalfNegativeBinomialLoss(alpha=1.0), [0], []),
+    (HalfNegativeBinomialLoss(alpha=2.0), [0], []),
     (HuberLoss(), [0], []),
     (HalfTweedieLoss(power=-3), [-100, -0.1, 0], []),
     (HalfTweedieLoss(power=0), [-100, 0], []),
@@ -191,6 +203,9 @@ Y_TRUE_PARAMS = [  # type: ignore[var-annotated]
 Y_PRED_PARAMS = [
     # (loss, [y success], [y fail])
     (HalfPoissonLoss(), [], [0]),
+    (HalfNegativeBinomialLoss(alpha=0.5), [], [0]),
+    (HalfNegativeBinomialLoss(alpha=1.0), [], [0]),
+    (HalfNegativeBinomialLoss(alpha=2.0), [], [0]),
     (HalfTweedieLoss(power=-3), [], [-3, -0.1, 0]),
     (HalfTweedieLoss(power=0), [], [-3, -0.1, 0]),
     (HalfTweedieLoss(power=1.5), [], [0]),
@@ -237,6 +252,30 @@ def test_loss_boundary_y_pred(loss, y_pred_success, y_pred_fail):
         (HuberLoss(quantile=0.5, delta=3), 1.0, 5.0, 3 * (4 - 3 / 2), None, None),
         (HuberLoss(quantile=0.5, delta=3), 1.0, 3.0, 0.5 * 2**2, None, None),
         (HalfPoissonLoss(), 2.0, np.log(4), 4 - 2 * np.log(4), 4 - 2, 4),
+        (
+            HalfNegativeBinomialLoss(alpha=0.5), 
+            2.0, 
+            np.log(4),
+            4.0 - 2.0 * np.log(4) + (2.0 + 1.0 / 0.5) * np.log(1 + 0.5 * 4.0),
+            4.0 - 2.0 - (2.0 + 1.0 / 0.5) * 4.0 / (1.0 / 0.5 + 4.0),
+            4.0 - (2.0 + 1.0 / 0.5) * 4.0 / (0.5 * (1.0 / 0.5 + 4.0)**2)
+        ),
+        (
+            HalfNegativeBinomialLoss(alpha=1.0),
+            2.0,
+            np.log(4),
+            4.0 - 2.0 * np.log(4) + (2.0 + 1.0 / 1.0) * np.log(1 + 1.0 * 4.0),
+            4.0 - 2.0 - (2.0 + 1.0 / 1.0) * 4.0 / (1.0 / 1.0 + 4.0),
+            4.0 - (2.0 + 1.0 / 1.0) * 4.0 / (1.0 * (1.0 / 1.0 + 4.0)**2)
+        ),
+        (   
+            HalfNegativeBinomialLoss(alpha=2.0),
+            2.0,
+            np.log(4),
+            4.0 - 2.0 * np.log(4) + (2.0 + 1.0 / 2.0) * np.log(1 + 2.0 * 4.0),
+            4.0 - 2.0 - (2.0 + 1.0 / 2.0) * 4.0 / (1.0 / 2.0 + 4.0),
+            4.0 - (2.0 + 1.0 / 2.0) * 4.0 / (2.0 * (1.0 / 2.0 + 4.0)**2)
+        ),
         (HalfGammaLoss(), 2.0, np.log(4), np.log(4) + 2 / 4, 1 - 2 / 4, 2 / 4),
         (HalfTweedieLoss(power=3), 2.0, np.log(4), -1 / 4 + 1 / 4**2, None, None),
         (HalfTweedieLossIdentity(power=1), 2.0, 4.0, 2 - 2 * np.log(2), None, None),
@@ -892,6 +931,9 @@ def test_gradients_hessians_numerically(loss, sample_weight, global_random_seed)
         ("poisson_loss", 12.0, 1.0),
         ("poisson_loss", 0.0, 2.0),
         ("poisson_loss", -22.0, 10.0),
+        ("negative_binomial_loss", 0.0, 1.0),
+        ("negative_binomial_loss", -5.0, 5.0),
+        ("negative_binomial_loss", 10.0, 0.5),
     ],
 )
 @skip_if_32bit
@@ -1015,6 +1057,7 @@ def test_loss_intercept_only(loss, sample_weight):
         (AbsoluteError(), np.median, "normal"),
         (PinballLoss(quantile=0.25), lambda x: np.percentile(x, q=25), "normal"),
         (HalfPoissonLoss(), np.mean, "poisson"),
+        (HalfNegativeBinomialLoss(), np.mean, "negative_binomial"),
         (HalfGammaLoss(), np.mean, "exponential"),
         (HalfTweedieLoss(), np.mean, "exponential"),
         (HalfBinomialLoss(), np.mean, "binomial"),

@@ -31,6 +31,7 @@ from sklearn._loss._loss import (
     CyHalfGammaLoss,
     CyHalfMultinomialLoss,
     CyHalfPoissonLoss,
+    CyHalfNegativeBinomialLoss,
     CyHalfSquaredError,
     CyHalfTweedieLoss,
     CyHalfTweedieLossIdentity,
@@ -759,6 +760,47 @@ class HalfPoissonLoss(BaseLoss):
         return term
 
 
+class HalfNegativeBinomialLoss(BaseLoss):
+    """Half Negative Binomial deviance loss with log-link, for regression.
+
+    Domain:
+    y_true in non-negative real numbers
+    y_pred in positive real numbers
+    r in positive real numbers
+
+    Link:
+    y_pred = exp(raw_prediction)
+
+    For a given sample x_i, half the Negative Binomial deviance is defined as::
+
+        loss(x_i) = r * log((r + y_true_i)/(r + exp(raw_prediction_i)))
+                    + y_true_i * log(y_true_i/(exp(raw_prediction_i)))
+                    - y_true_i + exp(raw_prediction_i)
+
+    Half the Negative Binomial deviance is actually the negative log-likelihood
+    up to constant terms (not involving raw_prediction) and simplifies the
+    computation of the gradients.
+    """
+
+    def __init__(self, sample_weight=None, alpha=1.0):
+        super().__init__(
+            closs=CyHalfNegativeBinomialLoss(alpha=float(alpha)),
+            link=LogLink(),
+        )
+        self.interval_y_true = Interval(0, np.inf, True, False)
+
+    def constant_to_optimal_zero(self, y_true, sample_weight=None):
+        alpha = self.closs.alpha
+        if alpha < 1e-6:
+            return HalfPoissonLoss().constant_to_optimal_zero(
+                y_true=y_true, sample_weight=sample_weight
+            )
+        term = alpha * np.log((alpha + y_true) / alpha) + xlogy(y_true, y_true) - y_true
+        if sample_weight is not None:
+            term *= sample_weight
+        return term
+
+
 class HalfGammaLoss(BaseLoss):
     """Half Gamma deviance loss with log-link, for regression.
 
@@ -1208,6 +1250,7 @@ _LOSSES = {
     "pinball_loss": PinballLoss,
     "huber_loss": HuberLoss,
     "poisson_loss": HalfPoissonLoss,
+    "negative_binomial_loss": HalfNegativeBinomialLoss,
     "gamma_loss": HalfGammaLoss,
     "tweedie_loss": HalfTweedieLoss,
     "binomial_loss": HalfBinomialLoss,
