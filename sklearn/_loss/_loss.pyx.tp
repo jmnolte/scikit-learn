@@ -226,7 +226,7 @@ class_list = [
     ("CyHalfPoissonLoss", doc_HalfPoissonLoss, None,
      "closs_half_poisson", "closs_grad_half_poisson",
      "cgradient_half_poisson", "cgrad_hess_half_poisson"),
-    ("CyHalfNegativeBinomialLoss", doc_HalfNegativeBinomialLoss, None,
+    ("CyHalfNegativeBinomialLoss", doc_HalfNegativeBinomialLoss, "alpha",
      "closs_half_negbinom", "closs_grad_half_negbinom",
      "cgradient_half_negbinom", "cgrad_hess_half_negbinom"),
     ("CyHalfGammaLoss", doc_HalfGammaLoss, None,

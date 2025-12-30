@@ -766,7 +766,7 @@ class HalfNegativeBinomialLoss(BaseLoss):
     Domain:
     y_true in non-negative real numbers
     y_pred in positive real numbers
-    r in positive real numbers
+    alpha in positive real numbers
 
     Link:
     y_pred = exp(raw_prediction)
