@@ -764,22 +764,43 @@ class HalfNegativeBinomialLoss(BaseLoss):
     """Half Negative Binomial deviance loss with log-link, for regression.
 
     Domain:
-    y_true in non-negative real numbers
-    y_pred in positive real numbers
-    alpha in positive real numbers
+        y_true in non-negative real numbers
+        y_pred in positive real numbers  
+        alpha > 0 (dispersion parameter)
 
     Link:
-    y_pred = exp(raw_prediction)
+        y_pred = exp(raw_prediction)
 
-    For a given sample x_i, half the Negative Binomial deviance is defined as::
+    For a given sample x_i, the half Negative Binomial deviance is defined as::
 
-        loss(x_i) = r * log((r + y_true_i)/(r + exp(raw_prediction_i)))
-                    + y_true_i * log(y_true_i/(exp(raw_prediction_i)))
-                    - y_true_i + exp(raw_prediction_i)
+        loss(x_i) = -y_true_i * raw_prediction_i 
+                    + (y_true_i + r) * log(exp(raw_prediction_i) + r)
 
-    Half the Negative Binomial deviance is actually the negative log-likelihood
-    up to constant terms (not involving raw_prediction) and simplifies the
-    computation of the gradients.
+    where exp(raw_prediction_i) = y_pred_i and r = 1/alpha.
+
+    The half deviance is equivalent to the negative log-likelihood up to
+    constant terms, thus simplifing gradient computation, while still ensuring 
+    that minimizing the loss corresponds to maximum likelihood estimation.
+    The full deviance (including constants) is::
+
+        full_loss(x_i) = y_true_i * log(y_true_i) - y_true_i * raw_prediction_i
+                        - (y_true_i + r) * log(y_true_i + r)
+                        + (y_true_i + r) * log(y_pred_i + r)
+
+    At the optimal prediction where y_pred_i = y_true_i, the full loss equals zero.
+
+    The Negative Binomial distribution models count data with overdispersion
+    (variance > mean), with variance = mu + alpha * mu^2. As alpha → 0, this
+    reduces to the Poisson distribution. For alpha < 1e-6, the Poisson loss is
+    used.
+
+    References
+    ----------
+    .. [1] McCullagh, P. and Nelder, J.A. (1989). Generalized Linear Models,
+           Second Edition. Chapman and Hall/CRC.
+    
+    .. [2] Hilbe, J.M. (2011). Negative Binomial Regression, Second Edition.
+           Cambridge University Press.
     """
 
     def __init__(self, sample_weight=None, alpha=1.0):

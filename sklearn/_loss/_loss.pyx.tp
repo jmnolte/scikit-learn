@@ -90,23 +90,32 @@ doc_HalfNegativeBinomialLoss = (
     y_pred = exp(raw_prediction)
 
     The Negative Binomial distribution generalizes the Poisson by allowing
-    overdispersion with variance = y_pred + alpha * y_pred^2.
-    As alpha approaches 0, this converges to the Poisson distribution. For alpha < 1e-6,
-    the Poisson Loss is used instead.
+    overdispersion, i.e., var = mu + alpha * mu^2, where mu is the mean.
+    As alpha approaches 0, the Negative Binomial converges to the Poisson 
+    distribution (variance = mu). This implementation thus utilizes the Poisson 
+    loss when alpha < 1e-6.
 
-    Half Negative Binomial deviance with log-link is:
-        2 * [y_true * log(y_true/y_pred) 
-             - (y_true + 1/alpha) * log((y_true + 1/alpha)/(y_pred + 1/alpha))]
-        = 2 * [y_true * log(y_true) - y_true * raw_prediction
-               - (y_true + 1/alpha) * log(y_true + 1/alpha)
-               + (y_true + 1/alpha) * log(y_pred + 1/alpha)]
+    The half Negative Binomial deviance is defined as:
+        y_true * log(y_true/y_pred) 
+        + (y_true + 1/alpha) * log((y_true + 1/alpha)/(y_pred + 1/alpha))
 
-    Dropping constant terms (not dependent on raw_prediction), this gives:
-        -y_true * raw_prediction + y_pred + (y_true + 1/alpha) * log(y_pred + 1/alpha)
-        = exp(raw_prediction) - y_true * raw_prediction 
-          + (y_true + 1/alpha) * log(exp(raw_prediction) + 1/alpha)
-        = exp(raw_prediction) - y_true * raw_prediction 
-          + (y_true + 1/alpha) * log(1 + alpha * exp(raw_prediction))
+    Expanding this with log-link (y_pred = exp(raw_prediction)):
+        y_true * log(y_true) - y_true * raw_prediction
+        + (y_true + 1/alpha) * log(y_true + 1/alpha)
+        - (y_true + 1/alpha) * log(y_pred + 1/alpha)
+
+    The implemented loss drops constant terms (not dependent on raw_prediction):
+        loss = -y_true * raw_prediction + (y_true + 1/alpha) * log(y_pred + 1/alpha)
+
+    where y_pred = exp(raw_prediction).
+
+    References
+    ----------
+    .. [1] McCullagh, P. and Nelder, J.A. (1989). Generalized Linear Models,
+           Second Edition. Chapman and Hall/CRC.
+    
+    .. [2] Hilbe, J.M. (2011). Negative Binomial Regression, Second Edition.
+           Cambridge University Press.
     """
 )
 
