@@ -256,25 +256,25 @@ def test_loss_boundary_y_pred(loss, y_pred_success, y_pred_fail):
             HalfNegativeBinomialLoss(alpha=0.5), 
             2.0, 
             np.log(4),
-            4.0 - 2.0 * np.log(4) + (2.0 + 1.0 / 0.5) * np.log(1 + 0.5 * 4.0),
-            4.0 - 2.0 - (2.0 + 1.0 / 0.5) * 4.0 / (1.0 / 0.5 + 4.0),
-            4.0 - (2.0 + 1.0 / 0.5) * 4.0 / (0.5 * (1.0 / 0.5 + 4.0)**2)
+            (2.0 + 1.0 / 0.5) * np.log(4.0 + 1.0 / 0.5) - 2.0 * np.log(4),
+            (2.0 + 1.0 / 0.5) * 4.0 / (4.0 + 1.0 / 0.5) - 2.0,
+            (2.0 + 1.0 / 0.5) * 4.0 / (0.5 * (4.0 + 1.0 / 0.5)**2) 
         ),
         (
             HalfNegativeBinomialLoss(alpha=1.0),
             2.0,
             np.log(4),
-            4.0 - 2.0 * np.log(4) + (2.0 + 1.0 / 1.0) * np.log(1 + 1.0 * 4.0),
-            4.0 - 2.0 - (2.0 + 1.0 / 1.0) * 4.0 / (1.0 / 1.0 + 4.0),
-            4.0 - (2.0 + 1.0 / 1.0) * 4.0 / (1.0 * (1.0 / 1.0 + 4.0)**2)
+            (2.0 + 1.0 / 1.0) * np.log(4.0 + 1.0 / 1.0) - 2.0 * np.log(4),
+            (2.0 + 1.0 / 1.0) * 4.0 / (4.0 + 1.0 / 1.0) - 2.0,
+            (2.0 + 1.0 / 1.0) * 4.0 / (1.0 * (4.0 + 1.0 / 1.0)**2) 
         ),
         (   
             HalfNegativeBinomialLoss(alpha=2.0),
             2.0,
             np.log(4),
-            4.0 - 2.0 * np.log(4) + (2.0 + 1.0 / 2.0) * np.log(1 + 2.0 * 4.0),
-            4.0 - 2.0 - (2.0 + 1.0 / 2.0) * 4.0 / (1.0 / 2.0 + 4.0),
-            4.0 - (2.0 + 1.0 / 2.0) * 4.0 / (2.0 * (1.0 / 2.0 + 4.0)**2)
+            (2.0 + 1.0 / 2.0) * np.log(4.0 + 1.0 / 2.0) - 2.0 * np.log(4),
+            (2.0 + 1.0 / 2.0) * 4.0 / (4.0 + 1.0 / 2.0) - 2.0,
+            (2.0 + 1.0 / 2.0) * 4.0 / (2.0 * (4.0 + 1.0 / 2.0)**2) 
         ),
         (HalfGammaLoss(), 2.0, np.log(4), np.log(4) + 2 / 4, 1 - 2 / 4, 2 / 4),
         (HalfTweedieLoss(power=3), 2.0, np.log(4), -1 / 4 + 1 / 4**2, None, None),
@@ -931,9 +931,9 @@ def test_gradients_hessians_numerically(loss, sample_weight, global_random_seed)
         ("poisson_loss", 12.0, 1.0),
         ("poisson_loss", 0.0, 2.0),
         ("poisson_loss", -22.0, 10.0),
-        ("negative_binomial_loss", 0.0, 1.0),
-        ("negative_binomial_loss", -5.0, 5.0),
-        ("negative_binomial_loss", 10.0, 0.5),
+        ("negative_binomial_loss", 5.0, 1.0),
+        ("negative_binomial_loss", 0.0, 2.0),
+        ("negative_binomial_loss", -5.0, 1.0),
     ],
 )
 @skip_if_32bit
@@ -1072,6 +1072,8 @@ def test_specific_fit_intercept_only(loss, func, random_dist, global_random_seed
     rng = np.random.RandomState(global_random_seed)
     if random_dist == "binomial":
         y_train = rng.binomial(1, 0.5, size=100)
+    elif random_dist == "negative_binomial":
+        y_train = rng.negative_binomial(n=1, p=0.5, size=100)
     else:
         y_train = getattr(rng, random_dist)(size=100)
     baseline_prediction = loss.fit_intercept_only(y_true=y_train)

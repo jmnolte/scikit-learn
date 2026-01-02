@@ -790,12 +790,12 @@ class HalfNegativeBinomialLoss(BaseLoss):
         self.interval_y_true = Interval(0, np.inf, True, False)
 
     def constant_to_optimal_zero(self, y_true, sample_weight=None):
-        alpha = self.closs.alpha
-        if alpha < 1e-6:
+        r = 1.0 / self.closs.alpha
+        if self.closs.alpha < 1e-6:
             return HalfPoissonLoss().constant_to_optimal_zero(
                 y_true=y_true, sample_weight=sample_weight
             )
-        term = alpha * np.log((alpha + y_true) / alpha) + xlogy(y_true, y_true) - y_true
+        term = xlogy(y_true, y_true) - (y_true + r) * np.log(y_true + r)
         if sample_weight is not None:
             term *= sample_weight
         return term

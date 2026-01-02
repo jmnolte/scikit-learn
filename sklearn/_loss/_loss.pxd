@@ -60,6 +60,7 @@ cdef class CyHalfPoissonLoss(CyLossFunction):
 
 
 cdef class CyHalfNegativeBinomialLoss(CyLossFunction):
+    cdef readonly double alpha  # readonly makes it accessible from Python
     cdef double cy_loss(self, double y_true, double raw_prediction) noexcept nogil
     cdef double cy_gradient(self, double y_true, double raw_prediction) noexcept nogil
     cdef double_pair cy_grad_hess(self, double y_true, double raw_prediction) noexcept nogil

@@ -510,10 +510,14 @@ cdef inline double closs_half_negbinom(
     double raw_prediction,
     double alpha
 ) noexcept nogil:
-    cdef double mu = exp(raw_prediction)
+    cdef double mu, r 
+
     if alpha < 1e-6:
         return closs_half_poisson(y_true, raw_prediction)
-    return mu - y_true * raw_prediction + (y_true + 1.0/alpha) * log(1.0 + alpha * mu)
+
+    mu = exp(raw_prediction)
+    r = 1.0 / alpha
+    return (y_true + r) * log(mu + r) - y_true * raw_prediction
 
 
 cdef inline double cgradient_half_negbinom(
@@ -521,10 +525,14 @@ cdef inline double cgradient_half_negbinom(
     double raw_prediction,
     double alpha
 ) noexcept nogil:
-    cdef double mu = exp(raw_prediction)
+    cdef double mu, r 
+
     if alpha < 1e-6:
         return cgradient_half_poisson(y_true, raw_prediction)
-    return mu - y_true - (y_true + 1.0/alpha) * mu / (1.0/alpha + mu)
+
+    mu = exp(raw_prediction)
+    r = 1.0 / alpha
+    return (y_true + r) * mu / (mu + r) - y_true
 
 
 cdef inline double_pair closs_grad_half_negbinom(
@@ -533,20 +541,19 @@ cdef inline double_pair closs_grad_half_negbinom(
     double alpha
 ) noexcept nogil:
     cdef double_pair lg
-    cdef double mu, denom, factor
+    cdef double mu, r
 
     if alpha < 1e-6:
         return closs_grad_half_poisson(y_true, raw_prediction)
     
     mu = exp(raw_prediction)
-    denom = 1.0/alpha + mu
-    factor = y_true + 1.0/alpha
+    r = 1.0 / alpha
     
     # Loss
-    lg.val1 = mu - y_true * raw_prediction + factor * log(1.0 + alpha * mu)
+    lg.val1 = (y_true + r) * log(mu + r) - y_true * raw_prediction
     
     # Gradient: d/d(raw_prediction) of log-likelihood
-    lg.val2 = mu - y_true - factor * mu / denom
+    lg.val2 = (y_true + r) * mu / (mu + r) - y_true
     
     return lg
 
@@ -557,21 +564,19 @@ cdef inline double_pair cgrad_hess_half_negbinom(
     double alpha
 ) noexcept nogil:
     cdef double_pair gh
-    cdef double mu, denom, factor, ratio
+    cdef double mu, r
 
     if alpha < 1e-6:
         return cgrad_hess_half_poisson(y_true, raw_prediction)
     
     mu = exp(raw_prediction)
-    denom = 1.0/alpha + mu
-    factor = y_true + 1.0/alpha
-    ratio = mu / denom
+    r = 1.0 / alpha
     
     # Gradient: d/d(raw_prediction) of log-likelihood
-    gh.val1 = mu - y_true - factor * ratio
+    gh.val1 = (y_true + r) * mu / (mu + r) - y_true
     
     # Hessian: d/d(raw_prediction) of gradient
-    gh.val2 = mu - factor * mu / (alpha * denom * denom)
+    gh.val2 = (y_true + r) * mu / (alpha * (mu + r) * (mu + r))
     
     return gh
 
