@@ -21,7 +21,7 @@ from sklearn.linear_model._coordinate_descent import (
     enet_path,
     lasso_path,
 )
-from sklearn.linear_model._glm import GammaRegressor, PoissonRegressor, TweedieRegressor
+from sklearn.linear_model._glm import GammaRegressor, PoissonRegressor, NegativeBinomialRegressor, TweedieRegressor
 from sklearn.linear_model._huber import HuberRegressor
 from sklearn.linear_model._least_angle import (
     Lars,
@@ -87,6 +87,7 @@ __all__ = [
     "PassiveAggressiveRegressor",
     "Perceptron",
     "PoissonRegressor",
+    "NegativeBinomialRegressor",
     "QuantileRegressor",
     "RANSACRegressor",
     "Ridge",

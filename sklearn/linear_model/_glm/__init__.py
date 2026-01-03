@@ -4,6 +4,7 @@
 from sklearn.linear_model._glm.glm import (
     GammaRegressor,
     PoissonRegressor,
+    NegativeBinomialRegressor,
     TweedieRegressor,
     _GeneralizedLinearRegressor,
 )
@@ -11,6 +12,7 @@ from sklearn.linear_model._glm.glm import (
 __all__ = [
     "GammaRegressor",
     "PoissonRegressor",
+    "NegativeBinomialRegressor",
     "TweedieRegressor",
     "_GeneralizedLinearRegressor",
 ]

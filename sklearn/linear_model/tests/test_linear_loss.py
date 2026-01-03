@@ -14,6 +14,7 @@ from sklearn._loss.loss import (
     HalfBinomialLoss,
     HalfMultinomialLoss,
     HalfPoissonLoss,
+    HalfNegativeBinomialLoss,
 )
 from sklearn.datasets import make_low_rank_matrix
 from sklearn.linear_model._linear_loss import LinearModelLoss
@@ -22,7 +23,7 @@ from sklearn.utils.fixes import CSR_CONTAINERS
 
 # We do not need to test all losses, just what LinearModelLoss does on top of the
 # base losses.
-LOSSES = [HalfBinomialLoss, HalfMultinomialLoss, HalfPoissonLoss]
+LOSSES = [HalfBinomialLoss, HalfMultinomialLoss, HalfPoissonLoss, HalfNegativeBinomialLoss]
 
 
 def random_X_y_coef(

@@ -11,7 +11,7 @@ import scipy
 from scipy import linalg
 from scipy.optimize import minimize, root
 
-from sklearn._loss import HalfBinomialLoss, HalfPoissonLoss, HalfTweedieLoss
+from sklearn._loss import HalfBinomialLoss, HalfPoissonLoss, HalfNegativeBinomialLoss, HalfTweedieLoss
 from sklearn._loss.link import IdentityLink, LogLink
 from sklearn.base import clone
 from sklearn.datasets import make_low_rank_matrix, make_regression
@@ -19,6 +19,7 @@ from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import (
     GammaRegressor,
     PoissonRegressor,
+    NegativeBinomialRegressor,
     Ridge,
     TweedieRegressor,
 )
@@ -67,6 +68,7 @@ def regression_data():
         [
             BinomialRegressor(),
             PoissonRegressor(),
+            NegativeBinomialRegressor(dispersion=1.0),
             GammaRegressor(),
             # TweedieRegressor(power=3.0),  # too difficult
             # TweedieRegressor(power=0, link="log"),  # too difficult
@@ -602,6 +604,7 @@ def test_sample_weights_validation():
     [
         TweedieRegressor(power=3),
         PoissonRegressor(),
+        NegativeBinomialRegressor(dispersion=1.0),
         GammaRegressor(),
         TweedieRegressor(power=1.5),
     ],
@@ -646,7 +649,7 @@ def test_glm_identity_regression(fit_intercept):
 @pytest.mark.parametrize("fit_intercept", [False, True])
 @pytest.mark.parametrize("alpha", [0.0, 1.0])
 @pytest.mark.parametrize(
-    "GLMEstimator", [_GeneralizedLinearRegressor, PoissonRegressor, GammaRegressor]
+    "GLMEstimator", [_GeneralizedLinearRegressor, PoissonRegressor, NegativeBinomialRegressor, GammaRegressor]
 )
 def test_glm_sample_weight_consistency(fit_intercept, alpha, GLMEstimator):
     """Test that the impact of sample_weight is consistent"""
@@ -698,6 +701,7 @@ def test_glm_sample_weight_consistency(fit_intercept, alpha, GLMEstimator):
     "estimator",
     [
         PoissonRegressor(),
+        NegativeBinomialRegressor(dispersion=1.0),
         GammaRegressor(),
         TweedieRegressor(power=3.0),
         TweedieRegressor(power=0, link="log"),
@@ -936,6 +940,7 @@ def test_tweedie_score(regression_data, power, link):
     "estimator, value",
     [
         (PoissonRegressor(), True),
+        (NegativeBinomialRegressor(dispersion=1.0), True),
         (GammaRegressor(), True),
         (TweedieRegressor(power=1.5), True),
         (TweedieRegressor(power=0), False),
