@@ -19,6 +19,7 @@ from sklearn._loss.loss import (
     HalfGammaLoss,
     HalfMultinomialLoss,
     HalfPoissonLoss,
+    HalfNegativeBinomialLoss,
     PinballLoss,
 )
 from sklearn.base import (
@@ -59,6 +60,7 @@ _LOSSES = _LOSSES.copy()
 _LOSSES.update(
     {
         "poisson": HalfPoissonLoss,
+        "negbinom": HalfNegativeBinomialLoss,
         "gamma": HalfGammaLoss,
         "quantile": PinballLoss,
     }
